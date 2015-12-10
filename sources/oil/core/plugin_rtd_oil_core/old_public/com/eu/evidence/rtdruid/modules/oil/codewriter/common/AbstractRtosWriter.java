@@ -648,6 +648,15 @@ public abstract class AbstractRtosWriter implements IRtosWriter {
 					}
 				}*/
 				
+				{	// ----------- CONF -----------
+					chType = CommonUtils.getFirstChildEnumType(vt, path + "CONF");
+					if (chType != null) {
+						answer[i].setProperty(ISimpleGenResKeywords.TASK_CONF, chType);
+					} else {
+						answer[i].setProperty(ISimpleGenResKeywords.TASK_CONF, "USER");
+					}
+				}
+				
 				{	// ----------- SCHEDULE ------------
 					chType = CommonUtils.getFirstChildEnumType(vt, path+"SCHEDULE");
 					if (chType!= null) {
@@ -684,6 +693,7 @@ public abstract class AbstractRtosWriter implements IRtosWriter {
 						// don't store anything
 					}
 				}
+				
 				
 				/*{ // ----------- RESOURCES ------------
 					values = CommonUtils.getValue(vt, path+"RESOURCE");

@@ -335,8 +335,7 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 					+ indent2 + "{");
 			
 			// buffer for synthetic task body
-			StringBuffer EE_th_synth_body = new StringBuffer(indent1 
-					+ "TASK (");
+			StringBuffer EE_th_synth_bodyBuffer = new StringBuffer();
 		
 		
 			/* Contains task's address */
@@ -669,11 +668,17 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 					 * 
 					 * 
 					 */
-//					if (!currTask.containsProperty(ISimpleGenResKeywords.TASK_CONF)
-//							|| !currTask.getString(ISimpleGenResKeywords.TASK_CONF).equals("USER")) {
-//						EE_th_synth_body.append(tname + ") {\n" 
-//							+ indent1 + "for(;;) {\n" + indent1 + "/* assembly code */\n" + indent1 + "}\n}\n\n");
-//					}
+					if (!currTask.containsProperty(ISimpleGenResKeywords.TASK_CONF)
+							|| !currTask.getString(ISimpleGenResKeywords.TASK_CONF).equals("USER")) {
+						EE_th_synth_bodyBuffer.append(indent1 + "TASK (" + tname + ") {\n" 
+							+ indent2 + "for(;;) {\n" 
+							+ indent3 + "/* assembly code */\n" 
+							+ indent2 + "}\n" 
+							+ indent1 + "};\n\n");
+					} 
+					else {
+						EE_th_synth_bodyBuffer.append("");
+					}
 		
 					/*
 					 * --------------- WRITE VALUES ---------------
@@ -911,6 +916,12 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 			buffer.append(EE_th_ready_prioBuffer);
 			buffer.append(EE_th_dispatch_prioBuffer);
 		
+			/*
+			 * task synthetic body
+			 */
+			buffer.append(indent1 + commentWriterC.writerSingleLineComment("Synthetic task body") 
+					+ EE_th_synth_bodyBuffer);
+			
 			/*
 			 * EE_th_status
 			 */
