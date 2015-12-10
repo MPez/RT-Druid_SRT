@@ -113,9 +113,6 @@ IMPLEMENTATION ee {
         	},
         	FALSE
         ] TIMING_PROTECTION;
-        
-        ENUM [USER, SINT] TYPE;
-        UINT32 INTERFERENCE;
      };
 
     RESOURCE {

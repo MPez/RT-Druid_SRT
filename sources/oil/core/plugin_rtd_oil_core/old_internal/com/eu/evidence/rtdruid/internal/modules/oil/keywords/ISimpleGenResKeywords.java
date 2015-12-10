@@ -70,7 +70,7 @@ public interface ISimpleGenResKeywords {
 	public final static String TASK_STACK_SIZE = "task_stack_size";
 	public final static String TASK_IRQ_SIZE = "task_irq_size";
 	
-	public final static String TASK_TYPE = "task_type";
+	public final static String TASK_CONF = "task_conf";
 	public final static String TASK_INTERFERENCE = "task_interference";
 
 	public final static String TASK_STACK_SHARED = "SHARED";

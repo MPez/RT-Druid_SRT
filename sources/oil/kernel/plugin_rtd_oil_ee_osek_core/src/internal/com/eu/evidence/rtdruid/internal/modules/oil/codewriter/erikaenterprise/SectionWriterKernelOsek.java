@@ -669,11 +669,11 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 					 * 
 					 * 
 					 */
-					if (!currTask.containsProperty(ISimpleGenResKeywords.TASK_TYPE)
-							|| !currTask.getString(ISimpleGenResKeywords.TASK_TYPE).equals("USER")) {
-						EE_th_synth_body.append(tname + ") {\n" 
-							+ indent1 + "for(;;) {\n" + indent1 + "/* assembly code */\n" + indent1 + "}\n}\n\n");
-					}
+//					if (!currTask.containsProperty(ISimpleGenResKeywords.TASK_CONF)
+//							|| !currTask.getString(ISimpleGenResKeywords.TASK_CONF).equals("USER")) {
+//						EE_th_synth_body.append(tname + ") {\n" 
+//							+ indent1 + "for(;;) {\n" + indent1 + "/* assembly code */\n" + indent1 + "}\n}\n\n");
+//					}
 		
 					/*
 					 * --------------- WRITE VALUES ---------------

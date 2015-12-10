@@ -84,9 +84,4 @@ IMPLEMENTATION ee {
 			TRIBOARD_TC2X5
 		] BOARD_DATA = NO_BOARD;
     };
-    
-    TASK {
-        ENUM [USER, SINT] TYPE;
-        UINT32 INTERFERENCE;
-	};
 };
