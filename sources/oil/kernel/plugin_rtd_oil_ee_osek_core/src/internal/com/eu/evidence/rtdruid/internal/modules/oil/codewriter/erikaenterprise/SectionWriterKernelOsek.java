@@ -336,6 +336,8 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 			
 			// buffer for synthetic task body
 			StringBuffer EE_th_synth_bodyBuffer = new StringBuffer();
+			// buffer for synthetic task global variables
+			StringBuffer EE_th_synth_varBuffer = new StringBuffer();
 		
 		
 			/* Contains task's address */
@@ -664,21 +666,48 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 					}
 					
 					/*
-					 * TYPOLOGY
+					 * CONFIGURATION + INTERFERENCE + INSTR_NUM
 					 * 
-					 * 
+					 * Append specific code for synthetic tasks
 					 */
+					
 					if (!currTask.containsProperty(ISimpleGenResKeywords.TASK_CONF)
 							|| !currTask.getString(ISimpleGenResKeywords.TASK_CONF).equals("USER")) {
-						EE_th_synth_bodyBuffer.append(indent1 + "TASK (" + tname + ") {\n" 
-							+ indent2 + "for(;;) {\n" 
-							+ indent3 + "/* assembly code */\n" 
-							+ indent2 + "}\n" 
-							+ indent1 + "};\n\n");
+						
+						if (currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE)
+								&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INSTR_NUM)) {
+							
+							int interf = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE);
+							int instr_num = currTask.getInt(ISimpleGenResKeywords.TASK_INSTR_NUM);
+							String lmu = "0x90000000";
+							String dspr = "0xD0000000";
+							
+							EE_th_synth_varBuffer.append(indent1 + "EE_UINT32 addr[" + instr_num + "] = "
+									+ "{");
+							for (int i = 0, j = instr_num * interf / 100; i < instr_num; i++, j--) {
+								EE_th_synth_varBuffer.append((j > 0) ? lmu : dspr);
+								if ( i < instr_num - 1) {
+									EE_th_synth_varBuffer.append(", ");
+								}
+							}
+							EE_th_synth_varBuffer.append("};\n\n");
+							
+							EE_th_synth_bodyBuffer.append(indent1 + "TASK (" + tname + ") {\n" 
+								+ indent2 + "for(;;) {\n" 
+								+ indent3 + "/* assembly code */\n" 
+								+ indent2 + "}\n" 
+								+ indent1 + "};\n\n");
+						} else {
+							throw new OilCodeWriterException("Missing property for task " 
+									+ currTask.getName() 
+									+ "; INTERFERENCE and INSTR_NUM properties must be present in case of synthetic task");
+						}
 					} 
 					else {
 						EE_th_synth_bodyBuffer.append("");
+						EE_th_synth_varBuffer.append("");
 					}
+					
 		
 					/*
 					 * --------------- WRITE VALUES ---------------
@@ -917,8 +946,10 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 			buffer.append(EE_th_dispatch_prioBuffer);
 		
 			/*
-			 * task synthetic body
+			 *  synthetic task variables and body
 			 */
+			buffer.append(indent1 + commentWriterC.writerSingleLineComment("Synthetic task variables")
+					+ EE_th_synth_varBuffer);
 			buffer.append(indent1 + commentWriterC.writerSingleLineComment("Synthetic task body") 
 					+ EE_th_synth_bodyBuffer);
 			
