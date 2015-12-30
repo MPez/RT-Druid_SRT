@@ -657,6 +657,29 @@ public abstract class AbstractRtosWriter implements IRtosWriter {
 					}
 				}
 				
+				{
+					// ----------- INTERFERENCE -----------
+					values = CommonUtils.getValue(vt, path + "INTERFERENCE");
+					if (values != null && isAValidInteger(values[0])) {
+						Integer interf = Integer.decode(values[0]);
+						if (interf >= 0 && interf <= 100) {
+							answer[i].setProperty(ISimpleGenResKeywords.TASK_INTERFERENCE, values[0]);
+						} else {
+							throw new OilCodeWriterException("Interference value of task " 
+										+ answer[i].getName() 
+										+ " must be between 0 and 100");
+						}
+					}
+				}
+				
+				{
+					// ----------- INSTR_NUM -----------
+					values = CommonUtils.getValue(vt, path + "INSTR_NUM");
+					if (values != null && isAValidInteger(values[0])) {
+						answer[i].setProperty(ISimpleGenResKeywords.TASK_INSTR_NUM, values[0]);
+					}
+				}
+				
 				{	// ----------- SCHEDULE ------------
 					chType = CommonUtils.getFirstChildEnumType(vt, path+"SCHEDULE");
 					if (chType!= null) {
