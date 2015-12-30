@@ -1021,7 +1021,7 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 				buffer.append(indent1 
 						+ commentWriterC.writerSingleLineComment("thread priority") 
 						+ indent1 
-						+ "const EE_TID EE_prio_link[EE_MAX_task + 1] = {\n");
+						+ "const EE_TID EE_prio_link[EE_MAX_TASK + 1] = {\n");
 				pre2 = "";
 				
 				List<ISimpleGenRes> taskList = ool.getList(IOilObjectList.TASK);
