@@ -6,6 +6,15 @@
 	</projects>
 	<buildSpec>
 		<buildCommand>
+			<name>com.eu.evidence.rtdruid.oil.cdt.ui.oil_builder</name>
+			<arguments>
+				<dictionary>
+					<key>ConfigFileName</key>
+					<value>conf.oil</value>
+				</dictionary>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
 			<name>org.eclipse.jdt.core.javabuilder</name>
 			<arguments>
 			</arguments>
@@ -24,6 +33,7 @@
 	<natures>
 		<nature>org.eclipse.pde.PluginNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>com.eu.evidence.rtdruid.oil.niossupport.natureID</nature>
 	</natures>
 	<linkedResources>
 		<link>
