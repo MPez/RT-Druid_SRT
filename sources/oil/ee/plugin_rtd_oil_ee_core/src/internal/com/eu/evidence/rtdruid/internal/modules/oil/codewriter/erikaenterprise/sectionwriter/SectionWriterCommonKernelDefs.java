@@ -496,7 +496,7 @@ public class SectionWriterCommonKernelDefs extends SectionWriter
 								String kernel_type = parent.getKernelType();
 								if(kernel_type.equals(IWritersKeywords.OSEK_BCC1)
 										|| kernel_type.equals(IWritersKeywords.OSEK_ECC1)) {
-									buffer_ee_opt.append("#define EE_MAX_PRIO EE_MAX_TASK + 1");
+									buffer_ee_opt.append("#define EE_MAX_PRIO (EE_MAX_TASK + 1)");
 								}
 							}
 							else {
