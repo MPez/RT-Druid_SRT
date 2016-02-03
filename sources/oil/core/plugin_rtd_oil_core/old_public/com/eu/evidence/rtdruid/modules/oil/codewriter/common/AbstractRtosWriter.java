@@ -656,22 +656,116 @@ public abstract class AbstractRtosWriter implements IRtosWriter {
 						answer[i].setProperty(ISimpleGenResKeywords.TASK_CONF, "USER");
 					}
 				}
-				
+			
 				{
-					// ----------- INTERFERENCE -----------
-					values = CommonUtils.getValue(vt, path + "INTERFERENCE");
+					// ----------- INTERFERENCE_LMU_MIN -----------
+					values = CommonUtils.getValue(vt, path + "INTERFERENCE_LMU_MIN");
+					if (values != null && isAValidInteger(values[0])) {
+						Integer interf = Integer.decode(values[0]);
+						if (interf >= 0 && interf <= 100)
+						{
+							answer[i].setProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MIN, values[0]);
+						} else {
+							throw new OilCodeWriterException("Interference values " 
+										+ answer[i].getName() 
+										+ " must be between 0 and 100;");
+						}
+					}
+				}
+
+				{
+					// ----------- INTERFERENCE_LMU_MAX -----------
+					values = CommonUtils.getValue(vt, path + "INTERFERENCE_LMU_MAX");
+					if (values != null && isAValidInteger(values[0])) {
+						Integer interf = Integer.decode(values[0]);
+						if (interf >= 0 && interf <= 100)
+						{
+							answer[i].setProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MAX, values[0]);
+						} else {
+							throw new OilCodeWriterException("Interference values " 
+										+ answer[i].getName() 
+										+ " must be between 0 and 100;");
+						}
+					}
+				}
+
+				{
+					// ----------- INTERFERENCE_LMU_STEP -----------
+					values = CommonUtils.getValue(vt, path + "INTERFERENCE_LMU_STEP");
 					if (values != null && isAValidInteger(values[0])) {
 						Integer interf = Integer.decode(values[0]);
 						if (interf >= 0 && interf <= 100) {
-							answer[i].setProperty(ISimpleGenResKeywords.TASK_INTERFERENCE, values[0]);
+							answer[i].setProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_STEP, values[0]);
 						} else {
-							throw new OilCodeWriterException("Interference value of task " 
+							throw new OilCodeWriterException("Interference step value of task " 
 										+ answer[i].getName() 
 										+ " must be between 0 and 100");
 						}
 					}
 				}
 				
+				{
+					// ----------- INTERFERENCE_PFLASH_MIN -----------
+					values = CommonUtils.getValue(vt, path + "INTERFERENCE_PFLASH_MIN");
+					if (values != null && isAValidInteger(values[0])) {
+						Integer interf = Integer.decode(values[0]);
+						if (interf >= 0 && interf <= 100)
+						{
+							answer[i].setProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN, values[0]);
+						} else {
+							throw new OilCodeWriterException("Interference values " 
+										+ answer[i].getName() 
+										+ " must be between 0 and 100;");
+						}
+					}
+				}
+
+				{
+					// ----------- INTERFERENCE_PFLASH_MAX -----------
+					values = CommonUtils.getValue(vt, path + "INTERFERENCE_PFLASH_MAX");
+					if (values != null && isAValidInteger(values[0])) {
+						Integer interf = Integer.decode(values[0]);
+						if (interf >= 0 && interf <= 100)
+						{
+							answer[i].setProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX, values[0]);
+						} else {
+							throw new OilCodeWriterException("Interference values " 
+										+ answer[i].getName() 
+										+ " must be between 0 and 100;");
+						}
+					}
+				}
+
+				{
+					// ----------- INTERFERENCE_PFLASH_STEP -----------
+					values = CommonUtils.getValue(vt, path + "INTERFERENCE_PFLASH_STEP");
+					if (values != null && isAValidInteger(values[0])) {
+						Integer interf = Integer.decode(values[0]);
+						if (interf >= 0 && interf <= 100) {
+							answer[i].setProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP, values[0]);
+						} else {
+							throw new OilCodeWriterException("Interference step value of task " 
+										+ answer[i].getName() 
+										+ " must be between 0 and 100");
+						}
+					}
+				}
+
+				{
+					// ----------- PERMUTATIONS -----------
+					values = CommonUtils.getValue(vt, path + "PERMUTATIONS");
+					if (values != null && isAValidInteger(values[0])) {
+						Integer interf = Integer.decode(values[0]);
+						if (interf >= 0) {
+							answer[i].setProperty(ISimpleGenResKeywords.TASK_PERMUTATIONS, values[0]);
+						} else {
+							throw new OilCodeWriterException("Permutations value " 
+										+ answer[i].getName() 
+										+ " must be a positive number");
+						}
+					}
+				}
+
 				{
 					// ----------- INSTR_NUM -----------
 					values = CommonUtils.getValue(vt, path + "INSTR_NUM");

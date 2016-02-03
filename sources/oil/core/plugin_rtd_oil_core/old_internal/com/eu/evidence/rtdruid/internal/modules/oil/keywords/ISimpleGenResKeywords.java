@@ -71,8 +71,14 @@ public interface ISimpleGenResKeywords {
 	public final static String TASK_IRQ_SIZE = "task_irq_size";
 	
 	public final static String TASK_CONF = "task_conf";
-	public final static String TASK_INTERFERENCE = "task_interference";
 	public final static String TASK_INSTR_NUM = "task_instr_num";
+	public final static String TASK_INTERFERENCE_LMU_MIN = "task_interference_lmu_min";
+	public final static String TASK_INTERFERENCE_LMU_MAX = "task_interference_lmu_max";
+	public final static String TASK_INTERFERENCE_LMU_STEP = "task_interference_lmu_step";
+	public final static String TASK_INTERFERENCE_PFLASH_MIN = "task_interference_pflash_min";
+	public final static String TASK_INTERFERENCE_PFLASH_MAX = "task_interference_pflash_max";
+	public final static String TASK_INTERFERENCE_PFLASH_STEP = "task_interference_pflash_step";
+	public final static String TASK_PERMUTATIONS = "task_permutations";
 
 	public final static String TASK_STACK_SHARED = "SHARED";
 	public final static String TASK_STACK_PRIVATE = "PRIVATE";

@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.lang.Math;
 
 import com.eu.evidence.rtdruid.desk.Messages;
 import com.eu.evidence.rtdruid.internal.modules.oil.exceptions.IncompatibleWriterKeywordsException;
@@ -203,7 +204,7 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 		final String MAX_COUNTER = (binaryDistr ? "RTD_" : "EE_") + "MAX_COUNTER";
 		final String MAX_TASK = (binaryDistr ? "RTD_" : "EE_") + "MAX_TASK";
 		final String MAX_RESOURCE = (binaryDistr ? "RTD_" : "EE_") + "MAX_RESOURCE";
-		
+		final String VICI_FW_MAX_CONTD = "VICI_FW_MAX_CONTD";
 		
 		/* indentxxx contains some white spaces for indent the output */
 		final String indent1 = IWritersKeywords.INDENT;
@@ -333,13 +334,21 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 			StringBuffer EE_th_is_extendedBuffer = new StringBuffer(indent1
 					+ "const EE_TYPEBOOL EE_th_is_extended["+MAX_TASK+"] =\n"
 					+ indent2 + "{");
-			
-			// buffer for synthetic task body
-			StringBuffer EE_th_synth_bodyBuffer = new StringBuffer();
-			// buffer for synthetic task variables
-			StringBuffer EE_th_synth_addrBuffer = new StringBuffer();
-			StringBuffer EE_th_synth_nextBuffer = new StringBuffer();
-		
+
+			// buffer for contender variables
+			int num_of_contenders = 0;
+			StringBuffer EE_th_contd_tid_to_contd_Buffer = new StringBuffer(indent1
+					+ "static const EE_TID tid_to_contd["+MAX_TASK+"] = { ");
+			StringBuffer EE_th_contd_shared_vars_Buffer = new StringBuffer(indent1 
+					+ "static char IN_DSPR v_dspr;\n"
+					+ indent1 + "static char IN_SRAMNC v_sram;\n"
+					+ indent1 + "static char IN_PFLASHNC v_pflash;\n\n");
+			StringBuffer EE_th_contd_conf_Buffer = new StringBuffer(indent1
+					+ "VICI_FW_conf_type configuration["+VICI_FW_MAX_CONTD+"] = {\n");
+			StringBuffer EE_th_contd_addr_vars_Buffer = new StringBuffer();
+			// buffer for contender body
+			StringBuffer EE_th_contd_body_Buffer = new StringBuffer();
+
 		
 			/* Contains task's address */
 			StringBuffer sbThread = new StringBuffer();
@@ -674,56 +683,187 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 					
 					if (!currTask.containsProperty(ISimpleGenResKeywords.TASK_CONF)
 							|| !currTask.getString(ISimpleGenResKeywords.TASK_CONF).equals("USER")) {
-						
-						if (currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE)
-								&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INSTR_NUM)) {
-							
-							int interf = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE);
+
+						if (currTask.containsProperty(ISimpleGenResKeywords.TASK_INSTR_NUM))
+						{
+							EE_th_contd_tid_to_contd_Buffer.append( num_of_contenders + ", ");
+
+							EE_th_contd_addr_vars_Buffer.append( indent1 + "extern void* " 
+								+ tname +"_addr __asm__(\".CONTD_LOOP_" + tname + "\");\n\n");
+
 							int instr_num = currTask.getInt(ISimpleGenResKeywords.TASK_INSTR_NUM);
-							String lmu = "0x90000000";
-							String dspr = "0xD0000000";
+							if (instr_num <= 0)
+							{
+								throw new OilCodeWriterException(tname + " must have at least one instruction " 
+									+ tname);
+							}
+
+							EE_th_contd_conf_Buffer.append( indent2 + "{ " + instr_num + "U,\n");
+
+							StringBuffer EE_th_contd_int_lmu_Buffer = new StringBuffer(indent2 + "  { ");
+							StringBuffer EE_th_contd_int_pflash_Buffer = new StringBuffer(indent2 + "  { ");
+
+							int contd_conf_count = 0;
 							
-							EE_th_synth_addrBuffer.append(indent1 + "EE_UINT32 addr_" + tname + "[" + instr_num + "] = {");
-							EE_th_synth_nextBuffer.append(indent1 + "int next_" + tname + "[" + instr_num + "] = {");
-							
-							for (int i = 0, j = instr_num * interf / 100; i < instr_num; i++, j--) {
-								EE_th_synth_addrBuffer.append((j > 0) ? lmu : dspr);
-								EE_th_synth_nextBuffer.append(i);
-								if ( i < instr_num - 1) {
-									EE_th_synth_addrBuffer.append(", ");
-									EE_th_synth_nextBuffer.append(", ");
+							if (currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MIN)
+								&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MAX)
+								&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_STEP)) 
+							{
+
+								int  int_lmu_min = 0;
+								int  int_lmu_max = 0;
+
+								int_lmu_min = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MIN);
+								int_lmu_max = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MAX);
+								int int_lmu_step = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_STEP);
+
+								if (int_lmu_min > int_lmu_max) {
+									throw new OilCodeWriterException("min interference greater than max for task " 
+									+ tname);
 								}
+
+								int  instr_lmu_min = instr_num * int_lmu_min / 100;
+								int  instr_lmu_max = instr_num * int_lmu_max / 100;
+								int  instr_lmu_step = 100;
+								if ((instr_num * int_lmu_step / 100) > 0)
+									instr_lmu_step = instr_num * int_lmu_step / 100;
+								else
+									instr_lmu_step = Math.max(instr_lmu_max - instr_lmu_min, 1);
+
+								if(currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN)
+									&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX)
+									&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP)) 
+								{ 
+									int  int_pflash_min = 0;
+									int  int_pflash_max = 0;
+
+									int_pflash_min = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN);
+									int_pflash_max = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX);
+									int int_pflash_step = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP);
+
+									if (int_pflash_min > int_pflash_max) {
+										throw new OilCodeWriterException("min interference greater than max for task " 
+										+ tname);
+									}
+
+									int  instr_pflash_min = instr_num * int_pflash_min / 100;
+									int  instr_pflash_max = instr_num * int_pflash_max / 100;
+									int  instr_pflash_step = 100;
+									if ((instr_num * int_pflash_step / 100) > 0)
+										instr_pflash_step = instr_num * int_pflash_step / 100;
+									else 
+										instr_pflash_step = Math.max(instr_pflash_max - instr_pflash_min, 1);
+
+									for (int i = instr_pflash_min; i <= instr_pflash_max; i += instr_pflash_step) {
+										for (int j = instr_lmu_min; j <= instr_lmu_max; j += instr_lmu_step) {
+											EE_th_contd_int_lmu_Buffer.append(i + "U, ");
+											EE_th_contd_int_pflash_Buffer.append(j + "U, ");
+											contd_conf_count += 1;
+										}
+									}
+								} else {
+									for (int j = instr_lmu_min; j <= instr_lmu_max; j += instr_lmu_step) {
+										EE_th_contd_int_lmu_Buffer.append(j + "U, ");
+										EE_th_contd_int_pflash_Buffer.append("0U, ");
+										contd_conf_count += 1;
+									}
+								}
+							} else if (currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN)
+								&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX)
+								&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP)) {
+
+								int  int_pflash_min = 0;
+								int  int_pflash_max = 0;
+
+								int_pflash_min = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN);
+								int_pflash_max = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX);
+								int int_pflash_step = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP);
+
+								if (int_pflash_min > int_pflash_max) {
+									throw new OilCodeWriterException("min interference greater than max for task " 
+									+ tname);
+								}
+								
+								int  instr_pflash_min = instr_num * int_pflash_min / 100;
+								int  instr_pflash_max = instr_num * int_pflash_max / 100;
+								int  instr_pflash_step = 100;
+								if ((instr_num * int_pflash_step / 100) > 0)
+									instr_pflash_step = instr_num * int_pflash_step / 100;
+								else 
+									instr_pflash_step = Math.max(instr_pflash_max - instr_pflash_min, 1);
+
+								for (int i = instr_pflash_min; i <= instr_pflash_max; i += instr_pflash_step) {
+									EE_th_contd_int_lmu_Buffer.append("0U, ");
+									EE_th_contd_int_pflash_Buffer.append(i + "U, ");
+									contd_conf_count += 1;
+								}
+
+							} else {
+								EE_th_contd_int_lmu_Buffer.append("");
+								EE_th_contd_int_pflash_Buffer.append("");
 							}
-							EE_th_synth_addrBuffer.append("};\n\n");
-							EE_th_synth_nextBuffer.append("};\n\n");							
-							
-							
-							EE_th_synth_bodyBuffer.append(indent1 + "TASK (" + tname + ") {\n" 
-								+ indent2 + "EE_UINT32 int_load = 0;\n"
-								+ indent2 + "asm (\n");
-							for (int i = 1; i < instr_num + 1; i++) {
-								EE_th_synth_bodyBuffer.append(indent3 + "\"ld.b %0, %" + i + " \\n\\t\"\n");
+
+							EE_th_contd_int_lmu_Buffer.append("},\n");
+							EE_th_contd_int_pflash_Buffer.append("},\n");
+
+							EE_th_contd_conf_Buffer.append(EE_th_contd_int_lmu_Buffer);
+							EE_th_contd_conf_Buffer.append(EE_th_contd_int_pflash_Buffer);
+
+							EE_th_contd_conf_Buffer.append(indent2 + "  0U,\n");
+							EE_th_contd_conf_Buffer.append(indent2 + "  " + contd_conf_count + "U,\n");
+							EE_th_contd_conf_Buffer.append(indent2 + "  0U,\n");
+
+							if (currTask.containsProperty(ISimpleGenResKeywords.TASK_PERMUTATIONS)) 
+							{
+								int num_of_permutations = currTask.getInt(ISimpleGenResKeywords.TASK_PERMUTATIONS);
+								EE_th_contd_conf_Buffer.append(indent2 + "  " + num_of_permutations + "U,\n");
+							} else {
+								EE_th_contd_conf_Buffer.append(indent2 + "  0U,\n");
 							}
-							EE_th_synth_bodyBuffer.append(indent3 + ": \"=d\" (int_load) : ");
+							EE_th_contd_conf_Buffer.append(indent2 + "  { }, { }\n");
+							EE_th_contd_conf_Buffer.append(indent2 + "},\n");
+
+							/* Task's body */
+
+							EE_th_contd_body_Buffer.append(indent1 + "TASK(" + tname + ") {\n"
+								+ indent2 + "\n"
+								+ indent2 + "configure_contender((EE_UINT32*) &" + tname + "_addr,\n"
+								+ indent3 + "&configuration[tid_to_contd[" + tname + "]]);\n"
+								+ indent2 + "\n"
+								+ indent2 + "sync_begin();\n"
+								+ indent2 + "\n"
+								+ indent2 + "__asm__ __volatile__ (\n"
+								+ indent3 + "\"mov.aa %%a3, %0 \\n\\t\"\n"
+								+ indent3 + "\"mov.aa %%a4, %1 \\n\\t\"\n"
+								+ indent3 + "\"mov.aa %%a5, %2 \\n\\t\"\n"
+								+ indent3 + ": : \"a\" (&v_dspr), \"a\" (&v_sram),\n"
+								+ indent3 + "\"a\" (&v_pflash) : \"a3\", \"a4\", \"a5\", \"memory\");\n"
+								+ indent2 + "__asm__ __volatile__ (\n"
+								+ indent3 + "\".align 2 \\n\\t\"\n"
+								+ indent3 + "\".CONTD_LOOP_" + tname + ": \\n\\t\"\n");
 							for (int i = 0; i < instr_num; i++) {
-								EE_th_synth_bodyBuffer.append("\"a\" (addr_" + tname + "[next_" + tname + "[" + i + "]])");
-								if (i < instr_num - 1) {
-									EE_th_synth_bodyBuffer.append(", \n" + indent3 + indent1);
-								}
+								EE_th_contd_body_Buffer.append(indent3 + "\"ld.b %%d5, [%%a3] \\n\\t\"\n");
 							}
-							EE_th_synth_bodyBuffer.append(");\n" + indent1 + "};\n\n");
+							EE_th_contd_body_Buffer.append(indent3 + "\"ld.b %%d5, [%0] \\n\\t\"\n"
+								+ indent3 + "\"jeq  %%d5, 1, .CONTD_LOOP_" + tname + " \\n\\t\"\n"
+								+ indent3 + ": : \"a\" (&contender_loop)\n"
+								+ indent3 + ": \"d5\", \"a3\", \"a4\", \"a5\", \"memory\" );\n");
+							EE_th_contd_body_Buffer.append(indent2 + "\n"
+								+ indent2 + "sync_end();\n"
+								+ indent2 + "\n"
+								+ indent2 + "ChainTask(" + tname + ");\n");
+							EE_th_contd_body_Buffer.append(indent1 + "}\n\n");
+							/* End of - Task's body */							
+
+							num_of_contenders += 1;
 						} else {
 							throw new OilCodeWriterException("Missing property for task " 
 									+ tname
-									+ "; INTERFERENCE and INSTR_NUM properties must be present in case of synthetic task");
+									+ "; INSTR_NUM properties must be set in case of synthetic task");
 						}
-					} 
-					else {
-						EE_th_synth_bodyBuffer.append("");
-						EE_th_synth_addrBuffer.append("");
-						EE_th_synth_nextBuffer.append("");
+					} else {
+						EE_th_contd_tid_to_contd_Buffer.append("EE_NIL, ");
 					}
-					
 		
 					/*
 					 * --------------- WRITE VALUES ---------------
@@ -754,6 +894,10 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 			}
 		
 			/* Complete all buffers */
+
+			EE_th_contd_tid_to_contd_Buffer.append("};\n\n");
+			EE_th_contd_conf_Buffer.append(indent1 + "};\n\n");
+
 			EE_th_ready_prioBuffer.append(" " + post + indent1 + "};\n\n");
 			EE_th_dispatch_prioBuffer.append(" " + post + indent1 + "};\n\n");
 			EE_rq_linkBuffer.append("};\n\n");
@@ -962,13 +1106,21 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 			buffer.append(EE_th_dispatch_prioBuffer);
 		
 			/*
-			 *  synthetic task variables and body
+			 *  contender variables and body
 			 */
-			buffer.append(indent1 + commentWriterC.writerSingleLineComment("Synthetic task variables")
-					+ EE_th_synth_addrBuffer);
-			buffer.append(EE_th_synth_nextBuffer);
-			buffer.append(indent1 + commentWriterC.writerSingleLineComment("Synthetic task body") 
-					+ EE_th_synth_bodyBuffer);
+			if (num_of_contenders > 0)
+			{
+				buffer.append(indent1 + commentWriterC.writerSingleLineComment("Contender section"));
+				buffer.append("#include \"vici_fw_common.h\"\n" 
+					+ "#include \"memory_segments.h\"\n"
+					+ "#include \"sync.h\"\n\n");
+				buffer.append(indent1 + commentWriterC.writerSingleLineComment("Contender global variables"));
+				buffer.append(EE_th_contd_tid_to_contd_Buffer); 
+				buffer.append(EE_th_contd_shared_vars_Buffer);
+				buffer.append(EE_th_contd_addr_vars_Buffer);
+				buffer.append(EE_th_contd_conf_Buffer);
+				buffer.append(EE_th_contd_body_Buffer);
+			}
 			
 			/*
 			 * EE_th_status
@@ -1073,7 +1225,7 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 					+ commentWriterC.writerSingleLineComment("First task in the ready queue (initvalue = EE_NIL)")
 					+ indent1 + "EE_TID EE_rq_first  = EE_NIL;\n\n");
 			}
-		
+
 			/*
 			 * ?CC2
 			 * 

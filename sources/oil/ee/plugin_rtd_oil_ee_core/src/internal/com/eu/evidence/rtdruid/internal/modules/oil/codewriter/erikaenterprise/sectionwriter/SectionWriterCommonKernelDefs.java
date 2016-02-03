@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.lang.Math;
 
 import com.eu.evidence.rtdruid.internal.modules.oil.codewriter.erikaenterprise.ErikaEnterpriseWriter;
 import com.eu.evidence.rtdruid.internal.modules.oil.exceptions.OilCodeWriterException;
@@ -183,6 +184,151 @@ public class SectionWriterCommonKernelDefs extends SectionWriter
 							+ "\n");
 				}
 			}
+
+			{
+				/*
+				 * ---------------- CONTENDERS MACRO ----------------
+				 */
+				List<ISimpleGenRes> taskList = ool.getList(IOilObjectList.TASK);
+
+				int num_of_contenders = 0;
+				int max_instr_num = 0;
+				int max_contd_confs = 0;
+				
+				for (Iterator<ISimpleGenRes> iter = taskList.iterator(); iter.hasNext();) {
+					
+					ISimpleGenRes currTask = (ISimpleGenRes) iter.next();
+					final String tname = currTask.getName();
+				
+					if (currTask.getString(ISimpleGenResKeywords.TASK_CONF).equals("SYNT")) {
+						
+						num_of_contenders += 1;
+						
+						if (!currTask.containsProperty(ISimpleGenResKeywords.TASK_INSTR_NUM))
+						{ 
+							throw new OilCodeWriterException("Missing property for task " 
+									+ tname
+									+ "; INSTR_NUM properties must be set in case of synthetic task");
+						}
+						
+						int contd_conf_count = 0;
+						
+						int instr_num = currTask.getInt(ISimpleGenResKeywords.TASK_INSTR_NUM);
+						if (instr_num <= 0)
+						{
+							throw new OilCodeWriterException(tname + " must have at least one instruction " 
+								+ tname);
+						}
+						if (instr_num > max_instr_num)
+						{
+							max_instr_num = instr_num;
+						}
+
+						if (currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MIN)
+							&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MAX)
+							&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_STEP)) 
+						{
+
+							int  int_lmu_min = 0;
+							int  int_lmu_max = 0;
+
+							int_lmu_min = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MIN);
+							int_lmu_max = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_MAX);
+							int int_lmu_step = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_LMU_STEP);
+
+							if (int_lmu_min > int_lmu_max) {
+								throw new OilCodeWriterException("Min interference greater than Max for task " 
+								+ tname);
+							}
+
+							int  instr_lmu_min = instr_num * int_lmu_min / 100;
+							int  instr_lmu_max = instr_num * int_lmu_max / 100;
+							int  instr_lmu_step = 100;
+							if ((instr_num * int_lmu_step / 100) > 0)
+								instr_lmu_step = instr_num * int_lmu_step / 100;
+							else
+								instr_lmu_step = Math.max(instr_lmu_max - instr_lmu_min, 1);
+
+							if(currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN)
+								&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX)
+								&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP)) 
+							{ 
+								int  int_pflash_min = 0;
+								int  int_pflash_max = 0;
+
+								int_pflash_min = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN);
+								int_pflash_max = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX);
+								int int_pflash_step = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP);
+
+								if (int_pflash_min > int_pflash_max) {
+									throw new OilCodeWriterException("Min interference greater than Max for task " 
+									+ tname);
+								}
+
+								int  instr_pflash_min = instr_num * int_pflash_min / 100;
+								int  instr_pflash_max = instr_num * int_pflash_max / 100;
+								int  instr_pflash_step = 100;
+								if ((instr_num * int_pflash_step / 100) > 0)
+									instr_pflash_step = instr_num * int_pflash_step / 100;
+								else 
+									instr_pflash_step = Math.max(instr_pflash_max - instr_pflash_min, 1);
+
+								contd_conf_count = (((instr_pflash_max - instr_pflash_min) / instr_pflash_step) + 1) *
+									(((instr_lmu_max - instr_lmu_min) / instr_lmu_step) + 1);
+
+							} else {
+								contd_conf_count = (((instr_lmu_max - instr_lmu_min) / instr_lmu_step) + 1);
+							}
+						} else 
+
+						if (currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN)
+							&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX)
+							&& currTask.containsProperty(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP)) {
+
+							int  int_pflash_min = 0;
+							int  int_pflash_max = 0;
+
+							int_pflash_min = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MIN);
+							int_pflash_max = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_MAX);
+							int int_pflash_step = currTask.getInt(ISimpleGenResKeywords.TASK_INTERFERENCE_PFLASH_STEP);
+
+							if (int_pflash_min > int_pflash_max) {
+								throw new OilCodeWriterException("min interference greater than max for task " 
+								+ tname);
+							}
+							
+							int  instr_pflash_min = instr_num * int_pflash_min / 100;
+							int  instr_pflash_max = instr_num * int_pflash_max / 100;
+							int  instr_pflash_step = 100;
+							if ((instr_num * int_pflash_step / 100) > 0)
+								instr_pflash_step = instr_num * int_pflash_step / 100;
+							else
+								instr_pflash_step = Math.max(instr_pflash_max - instr_pflash_min, 1);
+
+							contd_conf_count = (((instr_pflash_max - instr_pflash_min) / instr_pflash_step) + 1);
+
+						}
+
+						if (contd_conf_count > max_contd_confs)
+							max_contd_confs = contd_conf_count;
+					}
+				}
+
+				/* Write macros */
+
+				buffer.append("\n" + indent + commentWriterH.writerSingleLineComment("CONTENDER definition"));
+				if (!binaryDistr) {
+					buffer.append(indent + "#define VICI_FW_MAX_CONTD " + num_of_contenders + "\n"
+						+ indent + "#define VICI_FW_MAX_CONTD_LENGTH_WORD " + ((max_instr_num / 32) + 1) + "\n"
+						+ indent + "#define VICI_FW_MAX_CONTD_CONF " + max_contd_confs + "\n");
+				} else if (binaryDistrFull) {
+					buffer.append(indent + "const unsigned int VICI_FW_MAX_CONTD " + num_of_contenders + "\n"
+						+ indent + "const unsigned int VICI_FW_MAX_CONTD_LENGTH_WORD " + ((max_instr_num / 32) + 1) + "\n"
+						+ indent + "const unsigned int VICI_FW_MAX_CONTD_CONF " + max_contd_confs + "\n");
+				}
+
+			}
+
 
 			if(!parent.checkKeyword(IWritersKeywords.HR)) {
 				/*
