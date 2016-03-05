@@ -756,8 +756,8 @@ public class SectionWriterKernelOsek extends SectionWriter implements
 
 									for (int i = instr_pflash_min; i <= instr_pflash_max; i += instr_pflash_step) {
 										for (int j = instr_lmu_min; j <= instr_lmu_max; j += instr_lmu_step) {
-											EE_th_contd_int_lmu_Buffer.append(i + "U, ");
-											EE_th_contd_int_pflash_Buffer.append(j + "U, ");
+											EE_th_contd_int_lmu_Buffer.append(j + "U, ");
+											EE_th_contd_int_pflash_Buffer.append(i + "U, ");
 											contd_conf_count += 1;
 										}
 									}
